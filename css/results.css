@@ -5,3 +5,9 @@ body.results-page .side-panel { background: linear-gradient(160deg, rgba(37,99,2
 .results-page .bar { background: linear-gradient(90deg, var(--blue), var(--blue-glow), var(--yellow), var(--red)); }
 .results-page .candidate { border-left: 4px solid var(--blue); }
 .results-page #results-container { display: grid; gap: 1rem; }
+
+@media (max-width: 720px) {
+  .results-page .panel-head .row { display: grid; grid-template-columns: 1fr; width: 100%; }
+  .results-page .panel-head .row .btn, .results-page .panel-head .row a.btn { width: 100%; }
+  .results-page .post-header .stack { align-items: flex-start !important; }
+}

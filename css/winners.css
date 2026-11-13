@@ -135,7 +135,15 @@ body.winners-page .orb-3 { background: radial-gradient(circle at 50% 40%, rgba(2
 }
 
 @media (max-width: 720px) {
-  .winner-person { flex-direction: column; align-items: flex-start; }
-  .votes-pill { flex-direction: row; gap: 0.4rem; align-items: baseline; }
+  .winners-hero { padding: 1rem 0.25rem 0.25rem; }
+  .winners-hero h1 { font-size: clamp(1.9rem, 8vw, 2.6rem); }
+  .winner-card { padding: 1rem; }
+  .winner-person { flex-direction: column; align-items: stretch; gap: 0.85rem; padding: 1rem; }
+  .winner-identity { align-items: flex-start; }
+  .winner-trophy { font-size: 2.1rem; }
+  .winner-person .name { font-size: clamp(1.5rem, 7vw, 2rem); }
+  .votes-pill { width: 100%; flex-direction: row; gap: 0.5rem; align-items: baseline; justify-content: center; }
   .votes-pill .votes { font-size: 1.5rem; }
+  .winners-actions { flex-direction: column; }
+  .winners-actions .btn { width: 100%; }
 }

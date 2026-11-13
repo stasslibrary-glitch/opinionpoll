@@ -8,3 +8,88 @@ body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,
 .admin-page #admin-posts { display: grid; gap: 1rem; }
 .admin-page .section-title { margin-top: 1.25rem; }
 .admin-page .main-panel { display: grid; gap: 1rem; }
+.admin-page #votes-log { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Colorful glass confirmation modal */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: radial-gradient(circle at 20% 20%, rgba(37,99,235,0.35), transparent 35%),
+              radial-gradient(circle at 80% 80%, rgba(255,45,85,0.3), transparent 35%),
+              rgba(5, 8, 22, 0.55);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  animation: confirmFade 0.25s ease;
+}
+.confirm-overlay.hidden { display: none !important; }
+.confirm-dialog {
+  width: min(480px, 100%);
+  padding: 1.5rem 1.4rem 1.2rem;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(145deg, rgba(37,99,235,0.4), rgba(255,45,85,0.25), rgba(255,214,10,0.2));
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
+  animation: confirmPop 0.25s ease;
+}
+.confirm-dialog::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 12px; right: 12px; height: 6px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(90deg, var(--blue), var(--blue-glow), var(--yellow), var(--red));
+}
+.confirm-icon {
+  width: 64px; height: 64px;
+  margin: 0.2rem auto 0.7rem;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 2rem; font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--yellow), var(--red), #7c3aed);
+  box-shadow: 0 10px 24px rgba(255,45,85,0.3), 0 0 0 6px rgba(255,255,255,0.12);
+}
+.confirm-dialog h3 {
+  font-size: 1.45rem;
+  margin-bottom: 0.35rem;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.confirm-message {
+  color: rgba(255,255,255,0.95);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0.2rem 0 1.1rem;
+  white-space: pre-wrap;
+}
+.confirm-actions {
+  display: flex;
+  gap: 0.7rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.confirm-actions .btn { min-width: 140px; }
+@keyframes confirmFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes confirmPop { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Candidate multi-add form */
+.candidate-inputs { display: grid; gap: 0.55rem; }
+.candidate-input-row { display: flex; gap: 0.5rem; align-items: center; }
+.candidate-input-row .candidate-name-input { flex: 1; min-width: 0; }
+.remove-candidate-input { flex: 0 0 auto; width: 42px; height: 42px; padding: 0; font-size: 1.25rem; line-height: 1; }
+.add-candidate-field { justify-self: start; }
+#add-candidates-submit { margin-top: 0.15rem; }
+
+@media (max-width: 720px) {
+  .admin-page .admin-forms { grid-template-columns: 1fr; }
+  .admin-page .panel-head .row { display: grid; grid-template-columns: 1fr; width: 100%; }
+  .admin-page .panel-head .row .btn, .admin-page .panel-head .row a.btn { width: 100%; }
+  .confirm-actions { flex-direction: column-reverse; }
+  .confirm-actions .btn { width: 100%; }
+  .candidate-input-row { gap: 0.4rem; }
+}

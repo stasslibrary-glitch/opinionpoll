@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 let app, auth, db, configError = null;
@@ -11,7 +11,10 @@ try {
   }
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  db = getFirestore(app);
+  db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+    useFetchStreams: false
+  });
 } catch (err) {
   configError = err;
   console.error(err);
@@ -27,4 +30,9 @@ export function showConfigWarning(target = document.body) {
   const container = target.querySelector(".container") || target;
   container.prepend(el);
   return true;
+}
+
+export function isOfflineFirestoreError(err) {
+  const msg = String(err && (err.message || err.code || err) || "").toLowerCase();
+  return msg.includes("client is offline") || msg.includes("failed to get document because the client is offline") || msg.includes("unavailable") || msg.includes("network");
 }

@@ -11,15 +11,11 @@
   <div class="bg-scene" aria-hidden="true">
     <div class="bg-slideshow">
       <div class="bg-slide" style="background-image:url('images/bs%20(1).JPG')"></div>
-      <div class="bg-slide" style="background-image:url('images/bs%20(2).JPG')"></div>
-      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
       <div class="bg-slide" style="background-image:url('images/bs%20(4).JPG')"></div>
-      <div class="bg-slide" style="background-image:url('images/bs%20(5).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
     </div>
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="grid-plane"></div>
   </div>
 
   <header class="site-header">
@@ -80,7 +76,7 @@
         </section>
 
         <section class="card">
-          <h2>Add Candidate</h2>
+          <h2>Add Candidates</h2>
           <form id="candidate-form">
             <div class="stack">
               <label for="candidate-post">Post</label>
@@ -89,10 +85,17 @@
               </select>
             </div>
             <div class="stack">
-              <label for="candidate-name">Candidate name</label>
-              <input id="candidate-name" name="name" type="text" placeholder="e.g. Jane Doe" required>
+              <label>Candidate names</label>
+              <p class="muted small">Add multiple candidates for the selected post, then save them all at once.</p>
+              <div id="candidate-inputs" class="candidate-inputs">
+                <div class="candidate-input-row">
+                  <input class="candidate-name-input" name="candidateNames[]" type="text" placeholder="e.g. Jane Doe" aria-label="Candidate name" required>
+                  <button type="button" class="btn danger small remove-candidate-input" title="Remove" aria-label="Remove candidate field">&times;</button>
+                </div>
+              </div>
+              <button type="button" id="add-candidate-field" class="btn secondary small add-candidate-field">+ Add another candidate</button>
             </div>
-            <button type="submit" class="btn">Add Candidate</button>
+            <button type="submit" class="btn success" id="add-candidates-submit">Add All Candidates</button>
           </form>
         </section>
       </div>
@@ -111,6 +114,18 @@
   </div>
 
   <footer>St. Thomas Aquinas Secondary School, Kawempe &middot; End of Year Opinion Poll Admin</footer>
+
+  <div id="confirm-modal" class="confirm-overlay hidden" aria-hidden="true">
+    <div class="confirm-dialog glass-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="confirm-icon" aria-hidden="true">!</div>
+      <h3 id="confirm-title">Please Confirm</h3>
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button type="button" id="confirm-cancel" class="btn secondary">Cancel</button>
+        <button type="button" id="confirm-ok" class="btn danger">Confirm</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/admin.js"></script>
 </body>

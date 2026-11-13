@@ -1,4 +1,4 @@
-import { auth, db, showConfigWarning } from "./firebase.js";
+import { auth, db, showConfigWarning, isOfflineFirestoreError } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, getDocs, getDoc, doc, query, where, orderBy, limit,
@@ -10,12 +10,57 @@ const postsContainer = document.getElementById("admin-posts");
 const postForm = document.getElementById("post-form");
 const candidateForm = document.getElementById("candidate-form");
 const candidatePostSelect = document.getElementById("candidate-post");
+const candidateInputsWrap = document.getElementById("candidate-inputs");
+const addCandidateFieldBtn = document.getElementById("add-candidate-field");
+const addCandidatesSubmitBtn = document.getElementById("add-candidates-submit");
 const votesLog = document.getElementById("votes-log");
 const logoutBtn = document.getElementById("logout-btn");
 const endVotingBtn = document.getElementById("end-voting-btn");
 
+const confirmModal = document.getElementById("confirm-modal");
+const confirmTitleEl = document.getElementById("confirm-title");
+const confirmMessageEl = document.getElementById("confirm-message");
+const confirmOkBtn = document.getElementById("confirm-ok");
+const confirmCancelBtn = document.getElementById("confirm-cancel");
+
 let postsCache = [];
 let candidatesByPost = {};
+let confirmResolver = null;
+
+function showConfirm(message, { title = "Please Confirm", confirmText = "Confirm", confirmClass = "btn danger" } = {}) {
+  if (!confirmModal) return Promise.resolve(window.confirm(message));
+  confirmTitleEl.textContent = title;
+  confirmMessageEl.textContent = message;
+  confirmOkBtn.textContent = confirmText;
+  confirmOkBtn.className = confirmClass;
+  confirmModal.classList.remove("hidden");
+  confirmModal.setAttribute("aria-hidden", "false");
+  return new Promise((resolve) => {
+    confirmResolver = resolve;
+  });
+}
+
+function closeConfirm(result) {
+  if (!confirmModal) return;
+  confirmModal.classList.add("hidden");
+  confirmModal.setAttribute("aria-hidden", "true");
+  const resolve = confirmResolver;
+  confirmResolver = null;
+  if (resolve) resolve(result);
+}
+
+if (confirmOkBtn) confirmOkBtn.addEventListener("click", () => closeConfirm(true));
+if (confirmCancelBtn) confirmCancelBtn.addEventListener("click", () => closeConfirm(false));
+if (confirmModal) {
+  confirmModal.addEventListener("click", (e) => {
+    if (e.target === confirmModal) closeConfirm(false);
+  });
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && confirmModal && !confirmModal.classList.contains("hidden")) {
+    closeConfirm(false);
+  }
+});
 
 function setMessage(text, type = "info") {
   msg.textContent = text;
@@ -50,6 +95,9 @@ async function requireAdmin() {
       } catch (err) {
         console.error(err);
         await signOut(auth);
+        if (isOfflineFirestoreError(err)) {
+          sessionStorage.setItem("adminLoginError", `Admin check could not reach Firestore: ${err.message}. Check internet/ad blockers and ensure Cloud Firestore is enabled for this project. Clear site data if the problem persists.`);
+        }
         window.location.href = "admin-login.html";
         resolve(false);
       }
@@ -85,6 +133,9 @@ async function loadPosts() {
     opt.textContent = p.title || p.id;
     candidatePostSelect.appendChild(opt);
   });
+  if (!candidateInputsWrap || candidateInputsWrap.children.length === 0) {
+    resetCandidateInputs();
+  }
 
   candidatesByPost = {};
   const candidateResults = await Promise.all(postsCache.map(async (post) => {
@@ -143,7 +194,7 @@ function renderAdminPosts() {
     const list = card.querySelector(".candidates");
     if (candidates.length === 0) {
       list.innerHTML = `<p class="muted">No candidates yet.</p>`;
-    } else {
+  } else {
       candidates.forEach(c => {
         const row = document.createElement("div");
         row.className = "candidate";
@@ -157,9 +208,16 @@ function renderAdminPosts() {
             </div>
             <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
           </div>
-          <button class="btn danger small delete-candidate-btn">Remove</button>
+          <button type="button" class="btn danger small delete-candidate-btn">Remove</button>
         `;
-        row.querySelector(".delete-candidate-btn").addEventListener("click", () => removeCandidate(c.id, post.id));
+        const removeBtn = row.querySelector(".delete-candidate-btn");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await removeCandidate(c.id, post.id);
+          });
+        }
         list.appendChild(row);
       });
     }
@@ -216,20 +274,78 @@ postForm.addEventListener("submit", async (e) => {
 candidateForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const postId = candidateForm.postId.value;
-  const name = candidateForm.name.value.trim();
-  if (!postId || !name) return;
+  const inputs = Array.from(candidateInputsWrap ? candidateInputsWrap.querySelectorAll(".candidate-name-input") : []);
+  const names = inputs.map(i => i.value.trim()).filter(Boolean);
+  if (!postId) {
+    setMessage("Please select a post.", "error");
+    return;
+  }
+  if (names.length === 0) {
+    setMessage("Please enter at least one candidate name.", "error");
+    return;
+  }
+  const originalText = addCandidatesSubmitBtn ? addCandidatesSubmitBtn.textContent : "Add All Candidates";
   try {
-    await addDoc(collection(db, "candidates"), {
+    if (addCandidatesSubmitBtn) { addCandidatesSubmitBtn.disabled = true; addCandidatesSubmitBtn.textContent = "Adding..."; }
+    await Promise.all(names.map(name => addDoc(collection(db, "candidates"), {
       postId, name, votes: 0, createdAt: serverTimestamp()
-    });
-    candidateForm.name.value = "";
-    setMessage("Candidate added.", "success");
+    })));
+    resetCandidateInputs();
+    setMessage(`${names.length} candidate${names.length === 1 ? "" : "s"} added.`, "success");
     await loadAll();
   } catch (err) {
     console.error(err);
-    setMessage(`Failed to add candidate: ${err.message}`, "error");
+    setMessage(`Failed to add candidate(s): ${err.message}`, "error");
+  } finally {
+    if (addCandidatesSubmitBtn) { addCandidatesSubmitBtn.disabled = false; addCandidatesSubmitBtn.textContent = originalText; }
   }
 });
+
+function resetCandidateInputs() {
+  if (!candidateInputsWrap) return;
+  candidateInputsWrap.innerHTML = "";
+  candidateInputsWrap.appendChild(createCandidateInputRow("", true));
+}
+
+function createCandidateInputRow(value = "", autofocus = false) {
+  const row = document.createElement("div");
+  row.className = "candidate-input-row";
+  row.innerHTML = `
+    <input class="candidate-name-input" name="candidateNames[]" type="text" placeholder="e.g. Jane Doe" aria-label="Candidate name" required>
+    <button type="button" class="btn danger small remove-candidate-input" title="Remove" aria-label="Remove candidate field">&times;</button>
+  `;
+  const input = row.querySelector(".candidate-name-input");
+  const removeBtn = row.querySelector(".remove-candidate-input");
+  if (input) {
+    input.value = value;
+    if (autofocus) setTimeout(() => input.focus(), 0);
+  }
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      const rows = candidateInputsWrap ? candidateInputsWrap.querySelectorAll(".candidate-input-row") : [];
+      if (rows.length <= 1) {
+        if (input) input.value = "";
+        if (input) input.focus();
+        return;
+      }
+      row.remove();
+    });
+  }
+  return row;
+}
+
+if (addCandidateFieldBtn && candidateInputsWrap) {
+  addCandidateFieldBtn.addEventListener("click", () => {
+    candidateInputsWrap.appendChild(createCandidateInputRow("", true));
+  });
+}
+
+if (candidatePostSelect) {
+  candidatePostSelect.addEventListener("change", () => {
+    // keep entered names when switching posts? reset for clarity per-post batching
+    // resetCandidateInputs(); // optional; leaving names as-is so user can reassign consciously
+  });
+}
 
 async function togglePost(post) {
   try {
@@ -243,7 +359,11 @@ async function togglePost(post) {
 }
 
 async function removeCandidate(candidateId, postId) {
-  if (!confirm("Remove this candidate? (Votes for them remain in records but the candidate will be deleted.)")) return;
+  const ok = await showConfirm(
+    "Remove this candidate?\n\nVotes for them remain in records, but the candidate will be deleted from this post.",
+    { title: "Remove Candidate", confirmText: "Remove", confirmClass: "btn danger" }
+  );
+  if (!ok) return;
   try {
     await deleteDoc(doc(db, "candidates", candidateId));
     setMessage("Candidate removed.", "success");
@@ -255,12 +375,14 @@ async function removeCandidate(candidateId, postId) {
 }
 
 async function removePost(postId) {
-  if (!confirm("Delete this post and all its candidates?")) return;
+  const ok = await showConfirm(
+    "Delete this post and all its candidates?\n\nThis cannot be undone.",
+    { title: "Delete Post", confirmText: "Delete Post", confirmClass: "btn danger" }
+  );
+  if (!ok) return;
   try {
     const candidates = candidatesByPost[postId] || [];
-    for (const c of candidates) {
-      await deleteDoc(doc(db, "candidates", c.id));
-    }
+    await Promise.all(candidates.map(c => deleteDoc(doc(db, "candidates", c.id))));
     await deleteDoc(doc(db, "posts", postId));
     setMessage("Post deleted.", "success");
     await loadAll();
@@ -275,7 +397,10 @@ async function endVotingAndShowWinners() {
     setMessage("No posts to end. Create posts first.", "error");
     return;
   }
-  const ok = confirm("End voting for all posts and view winners?\n\nThis will close all open posts so no more votes can be cast.");
+  const ok = await showConfirm(
+    "End voting for all posts and view winners?\n\nThis will close all open posts so no more votes can be cast.",
+    { title: "End Voting", confirmText: "End Voting", confirmClass: "btn danger" }
+  );
   if (!ok) return;
   try {
     if (endVotingBtn) { endVotingBtn.disabled = true; endVotingBtn.textContent = "Ending..."; }
