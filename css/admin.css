@@ -85,6 +85,20 @@ body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,
 .add-candidate-field { justify-self: start; }
 #add-candidates-submit { margin-top: 0.15rem; }
 
+/* Edit modal */
+.edit-dialog { text-align: left; }
+.edit-dialog h3 { text-align: center; margin-bottom: 0.9rem; }
+.edit-fields { display: grid; gap: 0.75rem; margin-bottom: 1rem; }
+.edit-fields label { color: #fff; font-weight: 700; font-size: 0.95rem; }
+.edit-fields input, .edit-fields textarea {
+  background: rgba(255,255,255,0.92);
+  color: var(--ink);
+}
+
+/* Action groups */
+.post-actions, .candidate-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.candidate-actions { flex: 0 0 auto; }
+
 @media (max-width: 720px) {
   .admin-page .admin-forms { grid-template-columns: 1fr; }
   .admin-page .panel-head .row { display: grid; grid-template-columns: 1fr; width: 100%; }
@@ -92,4 +106,9 @@ body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,
   .confirm-actions { flex-direction: column-reverse; }
   .confirm-actions .btn { width: 100%; }
   .candidate-input-row { gap: 0.4rem; }
+  .post-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .post-actions .badge { grid-column: 1 / -1; justify-self: start; }
+  .post-actions .btn { width: 100%; }
+  .candidate-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .candidate-actions .btn { width: 100%; }
 }

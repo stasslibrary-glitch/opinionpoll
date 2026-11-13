@@ -127,6 +127,19 @@
     </div>
   </div>
 
+  <div id="edit-modal" class="confirm-overlay hidden" aria-hidden="true">
+    <div class="confirm-dialog glass-panel edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <h3 id="edit-title">Edit</h3>
+      <form id="edit-form">
+        <div id="edit-fields" class="stack edit-fields"></div>
+        <div class="confirm-actions">
+          <button type="button" id="edit-cancel" class="btn secondary">Cancel</button>
+          <button type="submit" id="edit-save" class="btn success">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="js/admin.js"></script>
 </body>
 </html>

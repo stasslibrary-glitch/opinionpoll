@@ -23,9 +23,17 @@ const confirmMessageEl = document.getElementById("confirm-message");
 const confirmOkBtn = document.getElementById("confirm-ok");
 const confirmCancelBtn = document.getElementById("confirm-cancel");
 
+const editModal = document.getElementById("edit-modal");
+const editTitleEl = document.getElementById("edit-title");
+const editFieldsEl = document.getElementById("edit-fields");
+const editForm = document.getElementById("edit-form");
+const editCancelBtn = document.getElementById("edit-cancel");
+const editSaveBtn = document.getElementById("edit-save");
+
 let postsCache = [];
 let candidatesByPost = {};
 let confirmResolver = null;
+let editState = null; // { type: 'post'|'candidate', id, postId? }
 
 function showConfirm(message, { title = "Please Confirm", confirmText = "Confirm", confirmClass = "btn danger" } = {}) {
   if (!confirmModal) return Promise.resolve(window.confirm(message));
@@ -57,10 +65,89 @@ if (confirmModal) {
   });
 }
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && confirmModal && !confirmModal.classList.contains("hidden")) {
-    closeConfirm(false);
+  if (e.key === "Escape") {
+    if (confirmModal && !confirmModal.classList.contains("hidden")) closeConfirm(false);
+    if (editModal && !editModal.classList.contains("hidden")) closeEditModal();
   }
 });
+
+function openEditModal(type, data) {
+  if (!editModal || !editFieldsEl || !editTitleEl) return;
+  editState = { type, id: data.id, postId: data.postId || null };
+  if (type === "post") {
+    editTitleEl.textContent = "Edit Post";
+    editFieldsEl.innerHTML = `
+      <div class="stack">
+        <label for="edit-post-title">Post title</label>
+        <input id="edit-post-title" name="title" type="text" required>
+      </div>
+      <div class="stack">
+        <label for="edit-post-desc">Description (optional)</label>
+        <textarea id="edit-post-desc" name="description" rows="3"></textarea>
+      </div>
+    `;
+    editFieldsEl.querySelector("#edit-post-title").value = data.title || "";
+    editFieldsEl.querySelector("#edit-post-desc").value = data.description || "";
+  } else {
+    editTitleEl.textContent = "Edit Candidate";
+    editFieldsEl.innerHTML = `
+      <div class="stack">
+        <label for="edit-candidate-name">Candidate name</label>
+        <input id="edit-candidate-name" name="name" type="text" required>
+      </div>
+    `;
+    editFieldsEl.querySelector("#edit-candidate-name").value = data.name || "";
+  }
+  editModal.classList.remove("hidden");
+  editModal.setAttribute("aria-hidden", "false");
+  const first = editFieldsEl.querySelector("input, textarea");
+  if (first) setTimeout(() => { first.focus(); first.select(); }, 0);
+}
+
+function closeEditModal() {
+  if (!editModal) return;
+  editModal.classList.add("hidden");
+  editModal.setAttribute("aria-hidden", "true");
+  editState = null;
+  if (editForm) editForm.reset();
+  if (editFieldsEl) editFieldsEl.innerHTML = "";
+}
+
+if (editCancelBtn) editCancelBtn.addEventListener("click", closeEditModal);
+if (editModal) {
+  editModal.addEventListener("click", (e) => {
+    if (e.target === editModal) closeEditModal();
+  });
+}
+if (editForm) {
+  editForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!editState) return;
+    const originalText = editSaveBtn ? editSaveBtn.textContent : "Save Changes";
+    try {
+      if (editSaveBtn) { editSaveBtn.disabled = true; editSaveBtn.textContent = "Saving..."; }
+      if (editState.type === "post") {
+        const title = (editFieldsEl.querySelector("#edit-post-title") || {}).value.trim();
+        const description = (editFieldsEl.querySelector("#edit-post-desc") || {}).value.trim();
+        if (!title) { setMessage("Post title is required.", "error"); return; }
+        await updateDoc(doc(db, "posts", editState.id), { title, description });
+        setMessage("Post updated.", "success");
+      } else if (editState.type === "candidate") {
+        const name = (editFieldsEl.querySelector("#edit-candidate-name") || {}).value.trim();
+        if (!name) { setMessage("Candidate name is required.", "error"); return; }
+        await updateDoc(doc(db, "candidates", editState.id), { name });
+        setMessage("Candidate updated.", "success");
+      }
+      closeEditModal();
+      await loadAll();
+    } catch (err) {
+      console.error(err);
+      setMessage(`Failed to save changes: ${err.message}`, "error");
+    } finally {
+      if (editSaveBtn) { editSaveBtn.disabled = false; editSaveBtn.textContent = originalText; }
+    }
+  });
+}
 
 function setMessage(text, type = "info") {
   msg.textContent = text;
@@ -182,10 +269,11 @@ function renderAdminPosts() {
           ${post.description ? `<p class="muted small">${escapeHtml(post.description)}</p>` : ""}
           <p class="muted small">Total votes: <strong>${total}</strong></p>
         </div>
-        <div class="row">
+        <div class="post-actions">
           <span class="badge ${closed ? "closed" : ""}">${closed ? "Closed" : "Open"}</span>
-          <button class="btn secondary small toggle-btn">${closed ? "Reopen" : "Close"}</button>
-          <button class="btn danger small delete-post-btn">Delete</button>
+          <button type="button" class="btn secondary small edit-post-btn">Edit</button>
+          <button type="button" class="btn secondary small toggle-btn">${closed ? "Reopen" : "Close"}</button>
+          <button type="button" class="btn danger small delete-post-btn">Delete</button>
         </div>
       </div>
       <div class="candidates"></div>
@@ -208,8 +296,19 @@ function renderAdminPosts() {
             </div>
             <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
           </div>
-          <button type="button" class="btn danger small delete-candidate-btn">Remove</button>
+          <div class="candidate-actions">
+            <button type="button" class="btn secondary small edit-candidate-btn">Edit</button>
+            <button type="button" class="btn danger small delete-candidate-btn">Remove</button>
+          </div>
         `;
+        const editBtn = row.querySelector(".edit-candidate-btn");
+        if (editBtn) {
+          editBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openEditModal("candidate", { id: c.id, name: c.name, postId: post.id });
+          });
+        }
         const removeBtn = row.querySelector(".delete-candidate-btn");
         if (removeBtn) {
           removeBtn.addEventListener("click", async (e) => {
@@ -222,6 +321,8 @@ function renderAdminPosts() {
       });
     }
 
+    const editPostBtn = card.querySelector(".edit-post-btn");
+    if (editPostBtn) editPostBtn.addEventListener("click", () => openEditModal("post", post));
     card.querySelector(".toggle-btn").addEventListener("click", () => togglePost(post));
     card.querySelector(".delete-post-btn").addEventListener("click", () => removePost(post.id));
     postsContainer.appendChild(card);
