@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St. Thomas Aquinas Secondary School, Kawempe | Admin Login</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/admin-login.css">
+</head>
+<body class="login-page">
+  <div class="bg-scene" aria-hidden="true">
+    <div class="bg-slideshow">
+      <div class="bg-slide" style="background-image:url('images/bs%20(1).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(2).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(4).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(5).JPG')"></div>
+    </div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-plane"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="brand-wrap">
+      <img src="badge.png" alt="St. Thomas Aquinas Secondary School badge" class="logo">
+      <div class="brand">St. Thomas Aquinas S.S. Kawempe<small>Admin Access</small></div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Vote</a>
+      <a href="admin-login.html" class="active">Admin</a>
+    </nav>
+  </header>
+
+  <div class="page-shell">
+    <aside class="side-panel glass-panel">
+      <p class="eyebrow">St. Thomas Aquinas Secondary School, Kawempe</p>
+      <h1>Admin Portal</h1>
+      <p class="motto">&ldquo;The source of knowledge and wisdom&rdquo;</p>
+      <p>Secure access for managing the End of Year Opinion Poll. Add posts and candidates, control voting, and monitor results.</p>
+      <div class="side-stats">
+        <div class="stat-chip"><span class="c-red"></span> Authorized admins only</div>
+        <div class="stat-chip"><span class="c-yellow"></span> Manage posts &amp; candidates</div>
+        <div class="stat-chip"><span class="c-blue"></span> View vote records</div>
+      </div>
+    </aside>
+
+    <main class="main-panel glass-panel">
+      <div class="card auth-card">
+        <h2>Sign in</h2>
+        <p class="muted small">Use your authorized administrator account.</p>
+        <div id="login-message" class="message info hidden" role="status"></div>
+        <form id="login-form">
+          <div class="stack">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" autocomplete="email" placeholder="admin@school.edu" required>
+          </div>
+          <div class="stack">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Enter password" required>
+          </div>
+          <button type="submit" class="btn" id="login-btn">Login to Dashboard</button>
+        </form>
+        <p class="muted small" style="margin-top:0.85rem">Admin access requires a Firebase Auth user and a matching document in the <code>admins</code> collection.</p>
+      </div>
+    </main>
+  </div>
+
+  <footer>St. Thomas Aquinas Secondary School, Kawempe &middot; Admin access is restricted</footer>
+
+  <script type="module" src="js/admin-login.js"></script>
+</body>
+</html>

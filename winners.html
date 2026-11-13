@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St. Thomas Aquinas Secondary School, Kawempe | Winners</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/winners.css">
+</head>
+<body class="winners-page">
+  <div class="bg-scene" aria-hidden="true">
+    <div class="bg-slideshow">
+      <div class="bg-slide" style="background-image:url('images/bs%20(1).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(2).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(4).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(5).JPG')"></div>
+    </div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-plane"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="brand-wrap">
+      <img src="badge.png" alt="St. Thomas Aquinas Secondary School badge" class="logo">
+      <div class="brand">St. Thomas Aquinas S.S. Kawempe<small>End of Year Opinion Poll</small></div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="admin.html">Dashboard</a>
+      <a href="results.html">Results</a>
+      <a href="winners.html" class="active">Winners</a>
+      <button class="btn secondary small" id="logout-btn" type="button">Logout</button>
+    </nav>
+  </header>
+
+  <div class="page-shell single winners-shell">
+    <main class="main-panel glass-panel winners-panel">
+      <div class="winners-hero">
+        <p class="eyebrow">St. Thomas Aquinas Secondary School, Kawempe</p>
+        <h1>Official Winners</h1>
+        <p class="motto">&ldquo;The source of knowledge and wisdom&rdquo;</p>
+        <p class="subtitle">End of Year Opinion Poll &mdash; Final Results</p>
+      </div>
+
+      <div id="winners-message" class="message info hidden" role="status"></div>
+      <div id="winners-container" class="perspective-wrap" aria-live="polite">
+        <div class="card"><p class="muted">Loading winners...</p></div>
+      </div>
+
+      <div class="row winners-actions">
+        <a href="results.html" class="btn secondary">View Full Results</a>
+        <a href="admin.html" class="btn">Back to Admin</a>
+      </div>
+    </main>
+  </div>
+
+  <footer>St. Thomas Aquinas Secondary School, Kawempe &middot; &ldquo;The source of knowledge and wisdom&rdquo; &middot; Congratulations to all winners</footer>
+
+  <script type="module" src="js/winners.js"></script>
+</body>
+</html>

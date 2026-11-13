@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St. Thomas Aquinas Secondary School, Kawempe | Admin Dashboard</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-page">
+  <div class="bg-scene" aria-hidden="true">
+    <div class="bg-slideshow">
+      <div class="bg-slide" style="background-image:url('images/bs%20(1).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(2).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(4).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(5).JPG')"></div>
+    </div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-plane"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="brand-wrap">
+      <img src="badge.png" alt="St. Thomas Aquinas Secondary School badge" class="logo">
+      <div class="brand">St. Thomas Aquinas S.S. Kawempe<small>Admin Dashboard</small></div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Vote</a>
+      <a href="admin.html" class="active">Dashboard</a>
+      <a href="results.html">Results</a>
+      <a href="winners.html">Winners</a>
+      <button class="btn secondary small" id="logout-btn" type="button">Logout</button>
+    </nav>
+  </header>
+
+  <div class="page-shell">
+    <aside class="side-panel glass-panel">
+      <p class="eyebrow">St. Thomas Aquinas Secondary School, Kawempe</p>
+      <h1>Poll Control</h1>
+      <p class="motto">&ldquo;The source of knowledge and wisdom&rdquo;</p>
+      <p>Manage the End of Year Opinion Poll: create posts, add candidates, open or close voting, and review live counts and records.</p>
+      <div class="side-stats">
+        <div class="stat-chip"><span class="c-blue"></span> Create &amp; manage posts</div>
+        <div class="stat-chip"><span class="c-red"></span> Add candidates &amp; control status</div>
+        <div class="stat-chip"><span class="c-yellow"></span> Monitor votes &amp; activity</div>
+      </div>
+    </aside>
+
+    <main class="main-panel glass-panel">
+      <div id="admin-message" class="message info hidden" role="status"></div>
+
+      <div class="panel-head">
+        <div>
+          <h2>Manage Poll</h2>
+          <p>Create posts and candidates for the election.</p>
+        </div>
+        <div class="row">
+          <a href="results.html" class="btn secondary">View Results</a>
+          <a href="winners.html" class="btn secondary">View Winners</a>
+          <button id="end-voting-btn" class="btn danger" type="button">End Voting &amp; Show Winners</button>
+        </div>
+      </div>
+      <div class="grid two admin-forms">
+        <section class="card">
+          <h2>Add Post</h2>
+          <form id="post-form">
+            <div class="stack">
+              <label for="post-title">Post title</label>
+              <input id="post-title" name="title" type="text" placeholder="e.g. Head Prefect" required>
+            </div>
+            <div class="stack">
+              <label for="post-desc">Description (optional)</label>
+              <textarea id="post-desc" name="description" rows="2" placeholder="Short description"></textarea>
+            </div>
+            <button type="submit" class="btn">Create Post</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Add Candidate</h2>
+          <form id="candidate-form">
+            <div class="stack">
+              <label for="candidate-post">Post</label>
+              <select id="candidate-post" name="postId" required>
+                <option value="">Select a post</option>
+              </select>
+            </div>
+            <div class="stack">
+              <label for="candidate-name">Candidate name</label>
+              <input id="candidate-name" name="name" type="text" placeholder="e.g. Jane Doe" required>
+            </div>
+            <button type="submit" class="btn">Add Candidate</button>
+          </form>
+        </section>
+      </div>
+
+      <h3 class="section-title">Posts &amp; Candidates</h3>
+      <div id="admin-posts" class="perspective-wrap">
+        <div class="card"><p class="muted">Loading...</p></div>
+      </div>
+
+      <h3 class="section-title">Recent Vote Records</h3>
+      <div class="card">
+        <p class="muted small">Recent vote entries (post, candidate, time) for monitoring activity.</p>
+        <div id="votes-log"><p class="muted">Loading...</p></div>
+      </div>
+    </main>
+  </div>
+
+  <footer>St. Thomas Aquinas Secondary School, Kawempe &middot; End of Year Opinion Poll Admin</footer>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St. Thomas Aquinas Secondary School, Kawempe | End of Year Opinion Poll</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+<body class="vote-page">
+  <div class="bg-scene" aria-hidden="true">
+    <div class="bg-slideshow">
+      <div class="bg-slide" style="background-image:url('images/bs%20(1).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(2).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(4).JPG')"></div>
+      <div class="bg-slide" style="background-image:url('images/bs%20(5).JPG')"></div>
+    </div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-plane"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="brand-wrap">
+      <img src="badge.png" alt="St. Thomas Aquinas Secondary School badge" class="logo">
+      <div class="brand">St. Thomas Aquinas S.S. Kawempe<small>End of Year Opinion Poll</small></div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html" class="active">Vote</a>
+      <a href="admin-login.html">Admin</a>
+    </nav>
+  </header>
+
+  <div class="page-shell">
+    <aside class="side-panel glass-panel">
+      <p class="eyebrow">St. Thomas Aquinas Secondary School, Kawempe</p>
+      <h1>Cast Your Vote</h1>
+      <p class="motto">&ldquo;The source of knowledge and wisdom&rdquo;</p>
+      <p>Choose one candidate for each post. Each vote is recorded securely to the admin tally. After completing all posts, tap <strong>Next Voter</strong> to allow the next person to vote on this computer.</p>
+      <div class="side-stats">
+        <div class="stat-chip"><span class="c-red"></span> One vote per post per voter session</div>
+        <div class="stat-chip"><span class="c-blue"></span> Votes recorded securely to admin</div>
+        <div class="stat-chip"><span class="c-yellow"></span> Shared-station ready (Next Voter)</div>
+      </div>
+    </aside>
+
+    <main class="main-panel glass-panel">
+      <div class="panel-head">
+        <div>
+          <h2>Voting Positions</h2>
+          <p>Select your preferred candidate for every open post, then pass to the next voter.</p>
+        </div>
+        <div class="session-bar">
+          <div id="session-status" class="session-status">Preparing voting session...</div>
+          <button id="new-ballot-btn" class="btn secondary small" type="button">New Ballot</button>
+        </div>
+      </div>
+      <div id="completion-card" class="card completion-card hidden" aria-live="polite">
+        <h3>Thank you! Votes submitted</h3>
+        <p class="muted">All selected votes for this voter have been recorded securely. Please hand over to the next voter.</p>
+        <button id="next-voter-btn" class="btn next-voter-btn hidden" type="button">Start Next Voter Ballot</button>
+        <p class="small muted">Submitted votes are recorded securely and cannot be changed.</p>
+      </div>
+
+      <div id="new-ballot-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="new-ballot-title">
+        <div class="modal-backdrop" data-close-modal="1"></div>
+        <div class="card modal-card">
+          <h3 id="new-ballot-title">Supervisor Authorization</h3>
+          <p class="muted">Enter the ballot password to start a new voter session.</p>
+          <form id="new-ballot-form">
+            <div class="stack">
+              <label for="ballot-password">Password</label>
+              <input type="password" id="ballot-password" name="password" autocomplete="off" required>
+            </div>
+            <p id="ballot-error" class="message error hidden"></p>
+            <div class="row" style="justify-content:flex-end">
+              <button type="button" class="btn secondary" id="cancel-ballot-btn">Cancel</button>
+              <button type="submit" class="btn" id="confirm-ballot-btn">Unlock New Ballot</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div id="global-message" class="message info hidden" role="status"></div>
+      <div id="posts-container" class="perspective-wrap" aria-live="polite">
+        <div class="card"><p class="muted">Loading posts and candidates...</p></div>
+      </div>
+    </main>
+  </div>
+
+  <footer>St. Thomas Aquinas Secondary School, Kawempe &middot; &ldquo;The source of knowledge and wisdom&rdquo; &middot; End of Year Opinion Poll</footer>
+
+  <script type="module" src="js/vote.js"></script>
+</body>
+</html>

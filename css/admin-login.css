@@ -1,0 +1,7 @@
+/* Admin login accents */
+body.login-page .orb-2 { background: radial-gradient(circle at 40% 40%, rgba(255,214,10,0.55), rgba(255,45,85,0.2)); }
+body.login-page .side-panel { background: linear-gradient(160deg, rgba(255,45,85,0.32), rgba(255,214,10,0.2)); }
+.login-page .main-panel { display: grid; place-items: center; }
+.login-page .auth-card { width: min(520px, 100%); }
+.login-page #login-btn { width: 100%; padding: 0.8rem 1rem; font-size: 1rem; background: linear-gradient(135deg, var(--red), var(--blue)); }
+.login-page .card::before { background: linear-gradient(90deg, var(--red), var(--yellow), var(--blue)); }

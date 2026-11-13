@@ -1,0 +1,10 @@
+/* Admin dashboard accents */
+body.admin-page .orb-3 { background: radial-gradient(circle at 50% 40%, rgba(37,99,235,0.45), rgba(255,214,10,0.15)); }
+body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,0.45), rgba(255,45,85,0.25)); }
+.admin-page .admin-forms .card:nth-child(1)::before { background: linear-gradient(90deg, var(--blue), var(--blue-glow)); }
+.admin-page .admin-forms .card:nth-child(2)::before { background: linear-gradient(90deg, var(--red), var(--yellow)); }
+.admin-page .post-card::before { background: linear-gradient(90deg, var(--yellow), var(--red), var(--blue)); }
+.admin-page #logout-btn { background: linear-gradient(135deg, var(--yellow), #ffe666); color: var(--blue-deep); }
+.admin-page #admin-posts { display: grid; gap: 1rem; }
+.admin-page .section-title { margin-top: 1.25rem; }
+.admin-page .main-panel { display: grid; gap: 1rem; }
