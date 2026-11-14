@@ -1,8 +1,8 @@
 import { auth, db, showConfigWarning, isOfflineFirestoreError } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  collection, addDoc, getDocs, getDoc, doc, query, where, orderBy, limit,
-  updateDoc, deleteDoc, serverTimestamp
+  collection, addDoc, getDoc, doc, query, orderBy, limit,
+  updateDoc, deleteDoc, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const msg = document.getElementById("admin-message");
@@ -16,6 +16,7 @@ const addCandidatesSubmitBtn = document.getElementById("add-candidates-submit");
 const votesLog = document.getElementById("votes-log");
 const logoutBtn = document.getElementById("logout-btn");
 const endVotingBtn = document.getElementById("end-voting-btn");
+const reopenVotingBtn = document.getElementById("reopen-voting-btn");
 
 const confirmModal = document.getElementById("confirm-modal");
 const confirmTitleEl = document.getElementById("confirm-title");
@@ -32,8 +33,14 @@ const editSaveBtn = document.getElementById("edit-save");
 
 let postsCache = [];
 let candidatesByPost = {};
+let votesCache = [];
 let confirmResolver = null;
 let editState = null; // { type: 'post'|'candidate', id, postId? }
+let unsubPosts = null;
+let unsubCandidates = null;
+let unsubVotes = null;
+let postsLoaded = false;
+let candidatesLoaded = false;
 
 function showConfirm(message, { title = "Please Confirm", confirmText = "Confirm", confirmClass = "btn danger" } = {}) {
   if (!confirmModal) return Promise.resolve(window.confirm(message));
@@ -139,7 +146,6 @@ if (editForm) {
         setMessage("Candidate updated.", "success");
       }
       closeEditModal();
-      await loadAll();
     } catch (err) {
       console.error(err);
       setMessage(`Failed to save changes: ${err.message}`, "error");
@@ -192,65 +198,87 @@ async function requireAdmin() {
   });
 }
 
-async function loadAll() {
-  try {
-    await loadPosts();
-  } catch (err) {
-    console.error(err);
-    setMessage(`Could not load posts: ${err.message}`, "error");
-    if (postsCache.length === 0) {
-      postsContainer.innerHTML = `<div class="card"><p class="message error">Could not load posts: ${escapeHtml(err.message)}</p></div>`;
-    }
-  }
-  try {
-    await loadVotesLog();
-  } catch (err) {
-    console.error(err);
-  }
-}
+function startAdminListeners() {
+  if (postsContainer) postsContainer.innerHTML = `<div class="card"><p class="muted">Loading posts and candidates...</p></div>`;
+  if (votesLog) votesLog.innerHTML = `<p class="muted">Loading...</p>`;
 
-async function loadPosts() {
-  const postsSnap = await getDocs(query(collection(db, "posts"), orderBy("createdAt", "asc")));
-  postsCache = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-  candidatePostSelect.innerHTML = `<option value="">Select a post</option>`;
-  postsCache.forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p.id;
-    opt.textContent = p.title || p.id;
-    candidatePostSelect.appendChild(opt);
-  });
-  if (!candidateInputsWrap || candidateInputsWrap.children.length === 0) {
-    resetCandidateInputs();
-  }
-
-  candidatesByPost = {};
-  const candidateResults = await Promise.all(postsCache.map(async (post) => {
-    try {
-      const snap = await getDocs(query(collection(db, "candidates"), where("postId", "==", post.id)));
-      const candidates = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
-      return { postId: post.id, candidates, error: null };
-    } catch (err) {
+  unsubPosts = onSnapshot(
+    query(collection(db, "posts"), orderBy("createdAt", "asc")),
+    (snap) => {
+      const prevSelected = candidatePostSelect ? candidatePostSelect.value : "";
+      postsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (candidatePostSelect) {
+        candidatePostSelect.innerHTML = `<option value="">Select a post</option>`;
+        postsCache.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = p.title || p.id;
+          candidatePostSelect.appendChild(opt);
+        });
+        if (prevSelected && postsCache.some(p => p.id === prevSelected)) {
+          candidatePostSelect.value = prevSelected;
+        }
+      }
+      if (candidateInputsWrap && candidateInputsWrap.children.length === 0) {
+        resetCandidateInputs();
+      }
+      postsLoaded = true;
+      renderAdminPosts();
+      renderVotesLog();
+    },
+    (err) => {
       console.error(err);
-      return { postId: post.id, candidates: [], error: err };
+      setMessage(`Could not load posts: ${err.message}`, "error");
+      if (postsCache.length === 0 && postsContainer) {
+        postsContainer.innerHTML = `<div class="card"><p class="message error">Could not load posts: ${escapeHtml(err.message)}</p></div>`;
+      }
     }
-  }));
+  );
 
-  let candidateError = null;
-  candidateResults.forEach(({ postId, candidates, error }) => {
-    candidatesByPost[postId] = candidates;
-    if (error && !candidateError) candidateError = error;
-  });
+  unsubCandidates = onSnapshot(
+    collection(db, "candidates"),
+    (snap) => {
+      const grouped = {};
+      snap.docs.forEach(d => {
+        const data = { id: d.id, ...d.data() };
+        const pid = data.postId;
+        if (!pid) return;
+        if (!grouped[pid]) grouped[pid] = [];
+        grouped[pid].push(data);
+      });
+      Object.keys(grouped).forEach(pid => {
+        grouped[pid].sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+      });
+      candidatesByPost = grouped;
+      candidatesLoaded = true;
+      renderAdminPosts();
+      renderVotesLog();
+    },
+    (err) => {
+      console.error(err);
+      setMessage(`Could not load candidates: ${err.message}`, "error");
+    }
+  );
 
-  renderAdminPosts();
-  if (candidateError) {
-    setMessage(`Posts loaded, but some candidate details could not load: ${candidateError.message}`, "error");
-  }
+  unsubVotes = onSnapshot(
+    query(collection(db, "votes"), orderBy("createdAt", "desc"), limit(20)),
+    (snap) => {
+      votesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderVotesLog();
+    },
+    (err) => {
+      console.error(err);
+      if (votesLog) votesLog.innerHTML = `<p class="message error">Could not load vote records: ${escapeHtml(err.message)}</p>`;
+    }
+  );
 }
 
 function renderAdminPosts() {
+  if (!postsContainer) return;
+  if (!postsLoaded) {
+    postsContainer.innerHTML = `<div class="card"><p class="muted">Loading posts and candidates...</p></div>`;
+    return;
+  }
   if (postsCache.length === 0) {
     postsContainer.innerHTML = `<div class="card"><p class="muted">No posts yet. Create one above.</p></div>`;
     return;
@@ -329,29 +357,27 @@ function renderAdminPosts() {
   });
 }
 
-async function loadVotesLog() {
-  try {
-    const snap = await getDocs(query(collection(db, "votes"), orderBy("createdAt", "desc"), limit(20)));
-    if (snap.empty) {
-      votesLog.innerHTML = `<p class="muted">No vote records yet.</p>`;
-      return;
-    }
-    const postNames = Object.fromEntries(postsCache.map(p => [p.id, p.title || p.id]));
-    const candNames = {};
-    Object.values(candidatesByPost).flat().forEach(c => { candNames[c.id] = c.name || c.id; });
-
-    let html = `<table><thead><tr><th>Post</th><th>Candidate</th><th>Time</th></tr></thead><tbody>`;
-    snap.forEach(d => {
-      const v = d.data();
-      const time = v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toLocaleString() : "—";
-      html += `<tr><td>${escapeHtml(postNames[v.postId] || v.postId || "—")}</td><td>${escapeHtml(candNames[v.candidateId] || v.candidateId || "—")}</td><td class="small muted">${escapeHtml(time)}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-    votesLog.innerHTML = html;
-  } catch (err) {
-    console.error(err);
-    votesLog.innerHTML = `<p class="message error">Could not load vote records: ${err.message}</p>`;
+function renderVotesLog() {
+  if (!votesLog) return;
+  if (!postsLoaded && !candidatesLoaded && votesCache.length === 0) {
+    votesLog.innerHTML = `<p class="muted">Loading...</p>`;
+    return;
   }
+  if (votesCache.length === 0) {
+    votesLog.innerHTML = `<p class="muted">No vote records yet.</p>`;
+    return;
+  }
+  const postNames = Object.fromEntries(postsCache.map(p => [p.id, p.title || p.id]));
+  const candNames = {};
+  Object.values(candidatesByPost).flat().forEach(c => { candNames[c.id] = c.name || c.id; });
+
+  let html = `<table><thead><tr><th>Post</th><th>Candidate</th><th>Time</th></tr></thead><tbody>`;
+  votesCache.forEach(v => {
+    const time = v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toLocaleString() : "—";
+    html += `<tr><td>${escapeHtml(postNames[v.postId] || v.postId || "—")}</td><td>${escapeHtml(candNames[v.candidateId] || v.candidateId || "—")}</td><td class="small muted">${escapeHtml(time)}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  votesLog.innerHTML = html;
 }
 
 postForm.addEventListener("submit", async (e) => {
@@ -365,7 +391,6 @@ postForm.addEventListener("submit", async (e) => {
     });
     postForm.reset();
     setMessage("Post created.", "success");
-    await loadAll();
   } catch (err) {
     console.error(err);
     setMessage(`Failed to create post: ${err.message}`, "error");
@@ -393,7 +418,6 @@ candidateForm.addEventListener("submit", async (e) => {
     })));
     resetCandidateInputs();
     setMessage(`${names.length} candidate${names.length === 1 ? "" : "s"} added.`, "success");
-    await loadAll();
   } catch (err) {
     console.error(err);
     setMessage(`Failed to add candidate(s): ${err.message}`, "error");
@@ -452,7 +476,6 @@ async function togglePost(post) {
   try {
     await updateDoc(doc(db, "posts", post.id), { status: post.status === "closed" ? "open" : "closed" });
     setMessage(`Post ${post.status === "closed" ? "reopened" : "closed"}.`, "success");
-    await loadAll();
   } catch (err) {
     console.error(err);
     setMessage(`Failed to update post: ${err.message}`, "error");
@@ -468,7 +491,6 @@ async function removeCandidate(candidateId, postId) {
   try {
     await deleteDoc(doc(db, "candidates", candidateId));
     setMessage("Candidate removed.", "success");
-    await loadAll();
   } catch (err) {
     console.error(err);
     setMessage(`Failed to remove candidate: ${err.message}`, "error");
@@ -486,7 +508,6 @@ async function removePost(postId) {
     await Promise.all(candidates.map(c => deleteDoc(doc(db, "candidates", c.id))));
     await deleteDoc(doc(db, "posts", postId));
     setMessage("Post deleted.", "success");
-    await loadAll();
   } catch (err) {
     console.error(err);
     setMessage(`Failed to delete post: ${err.message}`, "error");
@@ -515,7 +536,30 @@ async function endVotingAndShowWinners() {
   }
 }
 
+async function reopenAllPosts() {
+  if (postsCache.length === 0) {
+    setMessage("No posts to reopen. Create posts first.", "error");
+    return;
+  }
+  const ok = await showConfirm(
+    "Reopen voting for all posts?\n\nThis will set all posts to open so votes can be cast again.",
+    { title: "Reopen All Posts", confirmText: "Reopen All", confirmClass: "btn success" }
+  );
+  if (!ok) return;
+  try {
+    if (reopenVotingBtn) { reopenVotingBtn.disabled = true; reopenVotingBtn.textContent = "Reopening..."; }
+    await Promise.all(postsCache.map(p => updateDoc(doc(db, "posts", p.id), { status: "open" })));
+    setMessage("All posts reopened.", "success");
+  } catch (err) {
+    console.error(err);
+    setMessage(`Failed to reopen posts: ${err.message}`, "error");
+  } finally {
+    if (reopenVotingBtn) { reopenVotingBtn.disabled = false; reopenVotingBtn.textContent = "Reopen All Posts"; }
+  }
+}
+
 if (endVotingBtn) endVotingBtn.addEventListener("click", endVotingAndShowWinners);
+if (reopenVotingBtn) reopenVotingBtn.addEventListener("click", reopenAllPosts);
 
 logoutBtn.addEventListener("click", async () => {
   await signOut(auth);
@@ -528,5 +572,5 @@ function escapeHtml(str) {
 
 (async () => {
   const ok = await requireAdmin();
-  if (ok) loadAll();
+  if (ok) startAdminListeners();
 })();

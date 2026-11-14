@@ -18,10 +18,31 @@ const cancelBallotBtn = document.getElementById("cancel-ballot-btn");
 // Change this password for your polling station supervisors
 const BALLOT_PASSWORD = "pd";
 
-// Session-only state (cleared for each voter). No persistent device lock.
+// Session-only state (persists across refresh for this tab; cleared on new ballot). No persistent device lock.
+const BALLOT_VOTES_KEY = "ballot_voted_posts";
 const sessionVoted = new Set();
 let totalOpenPosts = 0;
 let postsCache = [];
+let completionPrompted = false;
+
+function loadBallotState() {
+  try {
+    const raw = sessionStorage.getItem(BALLOT_VOTES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(arr)) arr.forEach(id => { if (id) sessionVoted.add(String(id)); });
+  } catch (_) {}
+}
+
+function saveBallotState() {
+  try {
+    sessionStorage.setItem(BALLOT_VOTES_KEY, JSON.stringify(Array.from(sessionVoted)));
+  } catch (_) {}
+}
+
+function clearBallotState() {
+  sessionVoted.clear();
+  try { sessionStorage.removeItem(BALLOT_VOTES_KEY); } catch (_) {}
+}
 
 function clearLegacyLocks() {
   try {
@@ -43,8 +64,8 @@ function setMessage(text, type = "info") {
 
 function clearMessage() { setMessage("", "info"); }
 
-function hasVoted(postId) { return sessionVoted.has(postId); }
-function markVoted(postId) { sessionVoted.add(postId); }
+function hasVoted(postId) { return sessionVoted.has(String(postId)); }
+function markVoted(postId) { sessionVoted.add(String(postId)); saveBallotState(); }
 
 function updateSessionUI() {
   const done = sessionVoted.size;
@@ -58,7 +79,13 @@ function updateSessionUI() {
   if (nextVoterBtn) nextVoterBtn.classList.toggle("hidden", !complete);
   if (postsContainer) postsContainer.classList.toggle("session-complete", complete);
   if (complete) {
-    setMessage("All votes for this voter have been recorded securely. Ready for the next voter.", "success");
+    setMessage("All votes for this voter have been recorded securely. Enter the password to start the next ballot.", "success");
+    if (!completionPrompted) {
+      completionPrompted = true;
+      openNewBallotModal();
+    }
+  } else {
+    completionPrompted = false;
   }
 }
 
@@ -82,7 +109,8 @@ function closeNewBallotModal() {
 }
 
 function startNewBallot() {
-  sessionVoted.clear();
+  clearBallotState();
+  completionPrompted = false;
   if (completionCard) completionCard.classList.add("hidden");
   if (postsContainer) postsContainer.classList.remove("session-complete");
   clearMessage();
@@ -279,5 +307,6 @@ document.addEventListener("keydown", (e) => {
 });
 
 clearLegacyLocks();
+loadBallotState();
 loadPostsAndCandidates();
 
