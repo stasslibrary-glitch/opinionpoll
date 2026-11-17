@@ -19,12 +19,7 @@ body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: radial-gradient(circle at 20% 20%, rgba(37,99,235,0.35), transparent 35%),
-              radial-gradient(circle at 80% 80%, rgba(255,45,85,0.3), transparent 35%),
-              rgba(5, 8, 22, 0.55);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  animation: confirmFade 0.25s ease;
+  background: rgba(5, 8, 22, 0.72);
 }
 .confirm-overlay.hidden { display: none !important; }
 .confirm-dialog {
@@ -32,10 +27,9 @@ body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,
   padding: 1.5rem 1.4rem 1.2rem;
   text-align: center;
   color: #fff;
-  background: linear-gradient(145deg, rgba(37,99,235,0.4), rgba(255,45,85,0.25), rgba(255,214,10,0.2));
-  border: 1px solid rgba(255,255,255,0.55);
-  box-shadow: 0 30px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
-  animation: confirmPop 0.25s ease;
+  background: linear-gradient(145deg, rgba(37,99,235,0.45), rgba(255,45,85,0.3), rgba(255,214,10,0.2));
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 .confirm-dialog::before {
   content: "";
@@ -98,6 +92,14 @@ body.admin-page .side-panel { background: linear-gradient(160deg, rgba(11,31,77,
 /* Action groups */
 .post-actions, .candidate-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
 .candidate-actions { flex: 0 0 auto; }
+
+/* Vote log table delete button */
+#votes-log table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+#votes-log th, #votes-log td { padding: 0.55rem 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+#votes-log th { background: #f1f5f9; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; font-size: 0.75rem; }
+#votes-log tr:hover { background: #f8fafc; }
+#votes-log .delete-vote-btn { background: #ef4444; color: #fff; border: none; width: 30px; height: 30px; border-radius: 6px; font-size: 1.25rem; line-height: 1; padding: 0; cursor: pointer; }
+#votes-log .delete-vote-btn:hover { background: #dc2626; }
 
 @media (max-width: 720px) {
   .admin-page .admin-forms { grid-template-columns: 1fr; }

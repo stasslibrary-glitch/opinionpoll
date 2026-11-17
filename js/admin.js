@@ -2,7 +2,7 @@ import { auth, db, showConfigWarning, isOfflineFirestoreError } from "./firebase
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, getDoc, doc, query, orderBy, limit,
-  updateDoc, deleteDoc, serverTimestamp, onSnapshot
+  updateDoc, deleteDoc, serverTimestamp, onSnapshot, writeBatch, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const msg = document.getElementById("admin-message");
@@ -310,19 +310,25 @@ function renderAdminPosts() {
     const list = card.querySelector(".candidates");
     if (candidates.length === 0) {
       list.innerHTML = `<p class="muted">No candidates yet.</p>`;
-  } else {
-      candidates.forEach(c => {
+      return;
+    }
+    const leaderVotes = candidates.length ? Math.max(...candidates.map(c => Number(c.votes) || 0)) : 0;
+    const sortedVotes = candidates.map(c => Number(c.votes) || 0).sort((a, b) => b - a);
+    const runnerUpVotes = sortedVotes.length > 1 ? sortedVotes[1] : 0;
+    candidates.forEach(c => {
         const row = document.createElement("div");
         row.className = "candidate";
         const votes = Number(c.votes) || 0;
         const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
+        const isLeader = total > 0 && votes === leaderVotes;
+        const isRunnerUp = total > 0 && votes === runnerUpVotes && !isLeader;
         row.innerHTML = `
           <div class="candidate-info" style="width:100%">
             <div class="row" style="justify-content:space-between">
-              <div class="candidate-name">${escapeHtml(c.name || "Unnamed")}</div>
+              <div class="candidate-name">${escapeHtml(c.name || "Unnamed")} ${isLeader ? '<span class="badge">Leading</span>' : isRunnerUp ? '<span class="badge runnerup">1st Runner-Up</span>' : ""}</div>
               <div class="vote-count">${votes} vote(s) · ${pct}%</div>
             </div>
-            <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+            <div class="bar-wrap"><div class="bar charge-bar" data-width="${pct}" style="width:0%"></div></div>
           </div>
           <div class="candidate-actions">
             <button type="button" class="btn secondary small edit-candidate-btn">Edit</button>
@@ -355,6 +361,41 @@ function renderAdminPosts() {
     card.querySelector(".delete-post-btn").addEventListener("click", () => removePost(post.id));
     postsContainer.appendChild(card);
   });
+  animateChargeBars(postsContainer);
+}
+
+function animateChargeBars(root = document) {
+  const bars = Array.from((root || document).querySelectorAll(".bar[data-width]"));
+  if (bars.length === 0) return;
+  const reveal = (bar) => {
+    const target = Number(bar.dataset.width) || 0;
+    if (bar.dataset.animated === "1") {
+      if (bar.style.width !== `${target}%`) bar.style.width = `${target}%`;
+      return;
+    }
+    bar.dataset.animated = "1";
+    requestAnimationFrame(() => { bar.style.width = `${target}%`; });
+  };
+  if (!("IntersectionObserver" in window)) {
+    bars.forEach(reveal);
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        reveal(entry.target);
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2, rootMargin: "0px 0px -5% 0px" });
+  bars.forEach(bar => {
+    if (bar.dataset.animated === "1") {
+      const target = Number(bar.dataset.width) || 0;
+      if (bar.style.width !== `${target}%`) bar.style.width = `${target}%`;
+    } else {
+      io.observe(bar);
+    }
+  });
 }
 
 function renderVotesLog() {
@@ -371,13 +412,49 @@ function renderVotesLog() {
   const candNames = {};
   Object.values(candidatesByPost).flat().forEach(c => { candNames[c.id] = c.name || c.id; });
 
-  let html = `<table><thead><tr><th>Post</th><th>Candidate</th><th>Time</th></tr></thead><tbody>`;
+  let html = `<table><thead><tr><th>Post</th><th>Candidate</th><th>Time</th><th style="width:70px">Action</th></tr></thead><tbody>`;
   votesCache.forEach(v => {
     const time = v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toLocaleString() : "—";
-    html += `<tr><td>${escapeHtml(postNames[v.postId] || v.postId || "—")}</td><td>${escapeHtml(candNames[v.candidateId] || v.candidateId || "—")}</td><td class="small muted">${escapeHtml(time)}</td></tr>`;
+    html += `<tr>
+      <td>${escapeHtml(postNames[v.postId] || v.postId || "—")}</td>
+      <td>${escapeHtml(candNames[v.candidateId] || v.candidateId || "—")}</td>
+      <td class="small muted">${escapeHtml(time)}</td>
+      <td><button type="button" class="btn danger small delete-vote-btn" data-vote-id="${escapeAttr(v.id)}" data-post-id="${escapeAttr(v.postId || "")}" data-cand-id="${escapeAttr(v.candidateId || "")}" title="Delete this vote">×</button></td>
+    </tr>`;
   });
   html += `</tbody></table>`;
   votesLog.innerHTML = html;
+
+  // Wire up delete buttons
+  votesLog.querySelectorAll(".delete-vote-btn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      const voteId = btn.dataset.voteId;
+      const postId = btn.dataset.postId;
+      const candId = btn.dataset.candId;
+      const ok = await showConfirm(
+        "Delete this vote record?\n\nThe candidate's vote count will be reduced by 1. This cannot be undone.",
+        { title: "Delete Vote", confirmText: "Delete Vote", confirmClass: "btn danger" }
+      );
+      if (!ok) return;
+      try {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, "votes", voteId));
+        // Decrement candidate votes
+        const candRef = doc(db, "candidates", candId);
+        batch.update(candRef, { votes: increment(-1) });
+        // Decrement post totalVotes if it exists
+        if (postId) {
+          const postRef = doc(db, "posts", postId);
+          batch.update(postRef, { totalVotes: increment(-1) });
+        }
+        await batch.commit();
+        setMessage("Vote deleted and candidate count updated.", "success");
+      } catch (err) {
+        console.error(err);
+        setMessage(`Failed to delete vote: ${err.message}`, "error");
+      }
+    });
+  });
 }
 
 postForm.addEventListener("submit", async (e) => {
@@ -569,6 +646,7 @@ logoutBtn.addEventListener("click", async () => {
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
 }
+function escapeAttr(str) { return escapeHtml(str).replace(/`/g, "&#96;"); }
 
 (async () => {
   const ok = await requireAdmin();

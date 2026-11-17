@@ -238,6 +238,7 @@ async function castVote(post, candidate, card) {
   btns.forEach(b => { b.disabled = true; b.textContent = "Submitting..."; });
 
   try {
+    console.log("[vote] starting transaction for post", post.id, "candidate", candidate.id);
     await runTransaction(db, async (transaction) => {
       const postRef = doc(db, "posts", post.id);
       const candidateRef = doc(db, "candidates", candidate.id);
@@ -253,6 +254,7 @@ async function castVote(post, candidate, card) {
         createdAt: serverTimestamp()
       });
     });
+    console.log("[vote] transaction succeeded for post", post.id);
 
     markVoted(post.id);
     btns.forEach(b => { b.disabled = true; b.textContent = "Voted"; });
@@ -260,13 +262,14 @@ async function castVote(post, candidate, card) {
     setMessage(`Vote recorded for "${candidate.name}".`, "success");
     updateSessionUI();
   } catch (err) {
-    console.error(err);
+    console.error("[vote] transaction failed:", err);
+    const code = err.code ? ` (code: ${err.code})` : "";
     if (hasVoted(post.id)) {
       btns.forEach(b => { b.disabled = true; b.textContent = "Voted"; });
     } else {
       btns.forEach(b => { b.disabled = false; b.textContent = "Vote"; });
     }
-    setMessage(`Could not record vote: ${err.message}`, "error");
+    setMessage(`Could not record vote: ${err.message}${code}`, "error");
   }
 }
 

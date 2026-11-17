@@ -11,12 +11,8 @@
 <body class="results-page">
   <div class="bg-scene" aria-hidden="true">
     <div class="bg-slideshow">
-      <div class="bg-slide" style="background-image:url('images/bs%20(1).JPG')"></div>
       <div class="bg-slide" style="background-image:url('images/bs%20(4).JPG')"></div>
-      <div class="bg-slide" style="background-image:url('images/bs%20(3).JPG')"></div>
     </div>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
   </div>
 
   <header class="site-header">
@@ -25,10 +21,10 @@
       <div class="brand">St. Thomas Aquinas S.S. Kawempe<small>End of Year Opinion Poll</small></div>
     </div>
     <nav class="nav" aria-label="Primary">
-      <a href="admin.html">Dashboard</a>
+      <a href="index.html">Vote</a>
       <a href="results.html" class="active">Results</a>
       <a href="winners.html">Winners</a>
-      <button class="btn secondary small" id="logout-btn" type="button">Logout</button>
+      <a href="admin-login.html">Admin</a>
     </nav>
   </header>
 
@@ -49,11 +45,12 @@
       <div class="panel-head">
         <div>
           <h2>Results by Post</h2>
-          <p>Current standings for each voting position (admin only).</p>
+            <p>Current standings for each voting position.</p>
         </div>
         <div class="row">
           <a href="winners.html" class="btn secondary">View Winners</a>
           <a href="admin.html" class="btn">Dashboard</a>
+          <button type="button" id="download-results-pdf" class="btn">Download PDF</button>
         </div>
       </div>
       <div id="results-container" class="perspective-wrap" aria-live="polite">
